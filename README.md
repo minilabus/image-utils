@@ -1,8 +1,7 @@
 # base_personal_research
-Template Repository for Research Code
+Code base for images manipulation at the MINi Lab (UdS).
 
 # Installation
-``` 
-pip install -r requirements.txt
+```
 pip install -e .
 ```
