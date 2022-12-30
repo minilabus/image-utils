@@ -158,43 +158,40 @@ def generate_mosaic(imgs, rows, columns, auto_bbox=True, auto_border=True):
             imgs[i] = auto_crop(img, borders=border)
         sizes[i] = imgs[i].shape[0:2]
 
-    avg_ratio = np.mean(sizes[:, 0] / sizes[:, 1])
+    ratio = sizes[:, 0] / sizes[:, 1]
     avg_size = np.mean(sizes, axis=0, dtype=np.uint16)
+    avg_ratio = avg_size[0] / avg_size[1]
     for i, img in enumerate(imgs):
-        print('A!', imgs[i].shape)
-        if avg_ratio < 1:
+        if ratio[i] > avg_ratio:
             dim_1 = avg_size[0]
-            dim_2 = avg_size[0] / avg_ratio
+            dim_2 = dim_1 / ratio[i]
         else:
-            dim_1 = avg_size[1] / avg_ratio
             dim_2 = avg_size[1]
+            dim_1 = dim_2 * ratio[i]
 
-        imgs[i] = np.asarray(resize(img, dimensions=avg_size[::-1]))
-        print('B!', imgs[i].shape)
-        # imgs[i] = reshape_and_pad_to_center(imgs[i], avg_size)
-        print('C!', imgs[i].shape)
+        imgs[i] = np.asarray(resize(img, dimensions=(dim_2, dim_1)))
+        imgs[i] = pad_image_to_center(imgs[i], avg_size[::-1])
 
     mosaic = np.zeros((int(avg_size[0] * rows), int(avg_size[1] * columns), 3))
     for i, img in enumerate(imgs):
         if rows <= columns:
             row = i % columns
             col = i // columns
-            print('a', i, row, col)
         else:
             row = i // rows
             col = i % rows
-            print('B', i, row, col)
         mosaic[col * avg_size[0]:(col + 1) * avg_size[0],
                row * avg_size[1]:(row + 1) * avg_size[1], :] = img[:, :, 0:3]
 
     return mosaic.astype(np.uint8)
 
 
-def reshape_and_pad_to_center(img, new_shape):
+def pad_image_to_center(img, new_shape):
     old_image_height, old_image_width, channels = img.shape
-
-    # create new image of desired size and color (blue) for padding
     new_image_width, new_image_height = new_shape
+    if old_image_width > new_image_width or old_image_height > new_image_height:
+        raise ValueError('New shape must be larger than old shape!')
+    
     color = img[0, 0]
     new_img = np.full((new_image_height, new_image_width, channels),
                       color, dtype=np.uint8)

@@ -79,9 +79,6 @@ def main():
 
     
     imgs = [imageio.imread(f) for f in args.in_filename]
-    print(imgs[-1].shape)
-    # imgs = [np.rot90(img, k=1, axes=(0,1)) for img in imgs]
-    print(imgs[-1].shape)
     mosaic = generate_mosaic(imgs, int(args.rows), int(args.cols),
                              args.auto_crop, args.auto_border)
     imageio.imwrite(args.out_filename, mosaic)
