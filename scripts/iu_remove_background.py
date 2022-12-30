@@ -20,10 +20,10 @@ def _build_arg_parser():
     p.add_argument('out_filename',
                    help='Path of the output image.')
     p.add_argument('--mode', choices=['fill', 'value'], default='fill',
-                   help='Either replace all close values or use a floodfill.'
-                        '[%(default)s]')
+                   help='Either replace all close values or use a floodfill. '
+                        '[%(choices)s]')
     p.add_argument('--position', nargs=2, type=int, default=[0, 0],
-                   help='Position at which the white vs black background is '
+                   help='Position at which the colored background is '
                         'detected. [%(default)s]')
     p.add_argument('--threshold', type=float, default=10,
                    help='Threshold for background detection in case of noise. '
@@ -34,11 +34,11 @@ def _build_arg_parser():
 def main():
     parser = _build_arg_parser()
     args = parser.parse_args()
-    args.position = tuple(args.position)
+    args.position = tuple(args.position)[::-1]
 
     img = imageio.imread(args.in_filename)
-    new_img = remove_background(img, args.threshold,
-                                args.position, args.mode)
+    new_img, _ = remove_background(img, args.threshold,
+                                   args.position, args.mode)
     imageio.imwrite(args.out_filename, new_img)
 
 
