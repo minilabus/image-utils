@@ -28,14 +28,22 @@ def _build_arg_parser():
     p.add_argument('--threshold', type=float, default=10,
                    help='Threshold for background detection in case of noise. '
                         '[%(default)s]')
+    p.add_argument('-f', dest='force_overwrite', action='store_true',
+                   help='Overwrite the output files if they exist.')
     return p
 
 
 def main():
     parser = _build_arg_parser()
     args = parser.parse_args()
-    args.position = tuple(args.position)[::-1]
 
+    if not os.path.isfile(args.in_filename):
+        raise IOError('{} does not exist.'.format(args.in_filename))
+
+    if os.path.isfile(args.out_filename) and not args.force_overwrite:
+        raise IOError('{} exists, delete it first.'.format(args.out_filename))
+
+    args.position = tuple(args.position)
     img = imageio.imread(args.in_filename)
     new_img, _ = remove_background(img, args.threshold,
                                    args.position, args.mode)

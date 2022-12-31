@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-""" Remove background of image using pixel value from a position """
+""" Resize an image to a given size or scale. """
 
 import argparse
 import os
@@ -28,12 +28,20 @@ def _build_arg_parser():
                     help='Ratio of the image (X/Y). [1.0]')
     p2.add_argument('--ratio_val', nargs=2, type=float,
                     help='Ratio of the image as X & Y. [1.0 1.0]')
+    p.add_argument('-f', dest='force_overwrite', action='store_true',
+                   help='Overwrite the output files if they exist.')
     return p
 
 
 def main():
     parser = _build_arg_parser()
     args = parser.parse_args()
+
+    if not os.path.isfile(args.in_filename):
+        raise IOError('{} does not exist.'.format(args.in_filename))
+
+    if os.path.isfile(args.out_filename) and not args.force_overwrite:
+        raise IOError('{} exists, delete it first.'.format(args.out_filename))
 
     img = imageio.imread(args.in_filename)
     resized = resize(img, args.ratio_frac, args.ratio_val, args.dimensions,

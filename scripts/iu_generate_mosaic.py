@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-""" Remove background of image using pixel value from a position """
+""" Generate a mosaic from a set of images. """
 
 import argparse
 import os
@@ -42,12 +42,21 @@ def _build_arg_parser():
                                                 'pad_to_max'],
                    default='resize_to_avg',
                    help='Method to use to scale the images. [%(default)s]')
+    p.add_argument('-f', dest='force_overwrite', action='store_true',
+                   help='Overwrite the output files if they exist.')
     return p
 
 
 def main():
     parser = _build_arg_parser()
     args = parser.parse_args()
+
+    for filename in args.in_filename:
+        if not os.path.isfile(filename):
+            raise IOError('{} does not exist.'.format(filename))
+
+    if os.path.isfile(args.out_filename) and not args.force_overwrite:
+        raise IOError('{} exists, delete it first.'.format(args.out_filename))
 
     if args.rows is not None and args.max_in_col is not None:
         raise ValueError("Cannot specify both --rows and --max_in_col.")

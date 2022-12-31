@@ -74,6 +74,8 @@ def auto_crop(img, borders=0):
     new_img[borders//2:borders//2 + img.shape[0],
             borders//2:borders//2 + img.shape[1], :] = img
     _, mask = remove_background(new_img)
+
+    # Find the bounding box of the background mask
     x, y = np.where(mask == 255)
     x_min, x_max = np.min(x), np.max(x)
     y_min, y_max = np.min(y), np.max(y)
@@ -142,6 +144,8 @@ def generate_mosaic(imgs, rows, columns, auto_bbox=True, auto_border=True,
         Crop the images to the bounding box of the background.
     auto_border : bool, optional
         Add a border around the bounding box.
+    scaling_method : {'resize_to_avg', 'resize_to_max', 'pad_to_max'}, optional
+        Method used to scale the images.
 
     Returns
     -------
@@ -158,6 +162,7 @@ def generate_mosaic(imgs, rows, columns, auto_bbox=True, auto_border=True,
             imgs[i] = auto_crop(img, borders=border)
         sizes[i] = imgs[i].shape[0:2]
 
+    # Compute the final size of the mosaic using one of three methods
     ratio = sizes[:, 0] / sizes[:, 1]
     if scaling_method == 'resize_to_avg':
         final_size = np.mean(sizes, axis=0, dtype=np.uint16)
@@ -165,6 +170,8 @@ def generate_mosaic(imgs, rows, columns, auto_bbox=True, auto_border=True,
         final_size = np.max(sizes, axis=0).astype(np.uint16)
     avg_ratio = final_size[0] / final_size[1]
     for i, img in enumerate(imgs):
+        # If the image is wider than the final, then the width is set to the
+        # final width and we compute the height accordingly.
         if ratio[i] > avg_ratio:
             dim_1 = final_size[0]
             dim_2 = dim_1 / ratio[i]
@@ -177,8 +184,10 @@ def generate_mosaic(imgs, rows, columns, auto_bbox=True, auto_border=True,
             imgs[i] = np.asarray(resize(img, dimensions=(dim_2, dim_1)))
         imgs[i] = pad_image_to_center(imgs[i], final_size)
 
-    mosaic = np.zeros(
-        (int(final_size[0] * rows), int(final_size[1] * columns), 3))
+    mosaic = np.zeros((int(final_size[0] * rows),
+                       int(final_size[1] * columns), 3))
+
+    # With the image now resized, we can create the mosaic
     for i, img in enumerate(imgs):
         if rows <= columns:
             row = i % columns
@@ -193,6 +202,21 @@ def generate_mosaic(imgs, rows, columns, auto_bbox=True, auto_border=True,
 
 
 def pad_image_to_center(img, new_shape):
+    """ Pad image to center (always larger than the original image)
+
+    Parameters
+    ----------
+    img : ndarray
+        Input image.
+    new_shape : tuple
+        Dimensions of the output image.
+
+    Returns
+    -------
+    new_img : ndarray
+        Padded image.
+
+    """
     old_image_height, old_image_width, channels = img.shape
     new_image_width, new_image_height = new_shape[::-1]
     if old_image_width > new_image_width or old_image_height > new_image_height:
