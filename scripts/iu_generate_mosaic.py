@@ -36,6 +36,12 @@ def _build_arg_parser():
                    help='Crop the image to the bounding box.')
     p.add_argument('--auto_border', action='store_true',
                    help='Add extra borders.')
+
+    p.add_argument('--scaling_method', choices=['resize_to_avg',
+                                                'resize_to_max',
+                                                'pad_to_max'],
+                   default='resize_to_avg',
+                   help='Method to use to scale the images. [%(default)s]')
     return p
 
 
@@ -60,7 +66,7 @@ def main():
             and args.max_in_row is None and args.max_in_col is None:
         args.rows = 1
         args.cols = len(args.in_filename)
-    
+
     if args.rows is not None and args.cols is None:
         args.cols = np.ceil(len(args.in_filename) / args.rows)
 
@@ -77,10 +83,11 @@ def main():
         print('Overwriting rows and column to make the mosaic squarish.')
         args.rows = args.cols = np.ceil(np.sqrt(len(args.in_filename)))
 
-    
     imgs = [imageio.imread(f) for f in args.in_filename]
     mosaic = generate_mosaic(imgs, int(args.rows), int(args.cols),
-                             args.auto_crop, args.auto_border)
+                             args.auto_crop, args.auto_border,
+                             args.scaling_method)
+
     imageio.imwrite(args.out_filename, mosaic)
 
 

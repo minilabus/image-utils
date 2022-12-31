@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 from skimage.segmentation import flood_fill
@@ -127,7 +126,8 @@ def resize(img, ratio_frac=None, ratio_val=None, dimensions=None, scale=None):
     return Image.fromarray(img).resize((int(dim_1), int(dim_2)))
 
 
-def generate_mosaic(imgs, rows, columns, auto_bbox=True, auto_border=True):
+def generate_mosaic(imgs, rows, columns, auto_bbox=True, auto_border=True,
+                    scaling_method='resize_to_avg'):
     """ Generate a mosaic from a list of images
 
     Parameters
@@ -159,20 +159,26 @@ def generate_mosaic(imgs, rows, columns, auto_bbox=True, auto_border=True):
         sizes[i] = imgs[i].shape[0:2]
 
     ratio = sizes[:, 0] / sizes[:, 1]
-    avg_size = np.mean(sizes, axis=0, dtype=np.uint16)
-    avg_ratio = avg_size[0] / avg_size[1]
+    if scaling_method == 'resize_to_avg':
+        final_size = np.mean(sizes, axis=0, dtype=np.uint16)
+    elif scaling_method == 'resize_to_max' or scaling_method == 'pad_to_max':
+        final_size = np.max(sizes, axis=0).astype(np.uint16)
+    avg_ratio = final_size[0] / final_size[1]
     for i, img in enumerate(imgs):
         if ratio[i] > avg_ratio:
-            dim_1 = avg_size[0]
+            dim_1 = final_size[0]
             dim_2 = dim_1 / ratio[i]
         else:
-            dim_2 = avg_size[1]
+            dim_2 = final_size[1]
             dim_1 = dim_2 * ratio[i]
 
-        imgs[i] = np.asarray(resize(img, dimensions=(dim_2, dim_1)))
-        imgs[i] = pad_image_to_center(imgs[i], avg_size[::-1])
+        if scaling_method == 'resize_to_avg' \
+                or scaling_method == 'resize_to_max':
+            imgs[i] = np.asarray(resize(img, dimensions=(dim_2, dim_1)))
+        imgs[i] = pad_image_to_center(imgs[i], final_size)
 
-    mosaic = np.zeros((int(avg_size[0] * rows), int(avg_size[1] * columns), 3))
+    mosaic = np.zeros(
+        (int(final_size[0] * rows), int(final_size[1] * columns), 3))
     for i, img in enumerate(imgs):
         if rows <= columns:
             row = i % columns
@@ -180,18 +186,18 @@ def generate_mosaic(imgs, rows, columns, auto_bbox=True, auto_border=True):
         else:
             row = i // rows
             col = i % rows
-        mosaic[col * avg_size[0]:(col + 1) * avg_size[0],
-               row * avg_size[1]:(row + 1) * avg_size[1], :] = img[:, :, 0:3]
+        mosaic[col * final_size[0]:(col + 1) * final_size[0],
+               row * final_size[1]:(row + 1) * final_size[1], :] = img[:, :, 0:3]
 
     return mosaic.astype(np.uint8)
 
 
 def pad_image_to_center(img, new_shape):
     old_image_height, old_image_width, channels = img.shape
-    new_image_width, new_image_height = new_shape
+    new_image_width, new_image_height = new_shape[::-1]
     if old_image_width > new_image_width or old_image_height > new_image_height:
         raise ValueError('New shape must be larger than old shape!')
-    
+
     color = img[0, 0]
     new_img = np.full((new_image_height, new_image_width, channels),
                       color, dtype=np.uint8)
