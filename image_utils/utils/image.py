@@ -27,6 +27,8 @@ def remove_background(img, threshold=10, init_pos=(0, 0), mode='fill'):
 
     """
     img = img.astype(np.float32)
+    if img.shape[-1] == 4:
+        img = img[:, :, 0:3]
 
     value = img[init_pos]
     norm = np.linalg.norm(np.abs(img - value), axis=-1)
