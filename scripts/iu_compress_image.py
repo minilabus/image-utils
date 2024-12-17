@@ -41,6 +41,7 @@ def main():
     _, ext = os.path.splitext(args.out_filename)
     if ext in ['.jpg', '.jpeg', '.JPG', '.JPEG']:
         new_img = imageio.imread(args.in_filename)
+        new_img = new_img[:, :, 0:3]
         imageio.imwrite(args.out_filename, new_img, quality=args.level)
     elif ext in ['.gif', '.GIF']:
         frames = imageio.mimread(args.in_filename)

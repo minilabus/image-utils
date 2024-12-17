@@ -50,7 +50,15 @@ def main():
                     args.out_filename))
 
             frames.append(imageio.imread(filename))
-        imageio.mimwrite(args.out_filename, frames)
+
+        print(args.out_filename)
+        writer = imageio.get_writer(args.out_filename)
+        for im in frames:
+            writer.append_data(im)
+        writer.close()
+        #imageio.mimwrite(args.out_filename, frames)
+
+
     else:
         _, ext = os.path.splitext(args.in_filenames[0])
         if ext in ['.gif', '.GIF', '.mp4', '.MP4'] and args.out_dir is None:
